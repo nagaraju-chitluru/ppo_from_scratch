@@ -8,7 +8,7 @@ math:
     seed: 42
 
   policy:
-    policy_checkpoint: ""
+    policy_checkpoint: /content/drive/MyDrive/rl/unsloth_sft_model
     fallback_model_id: Qwen/Qwen2.5-Math-1.5B
     device_map: auto
     torch_dtype: float16
@@ -16,7 +16,7 @@ math:
     use_fast_tokenizer: false
 
   reward_model:
-    reward_checkpoint: /content/drive/MyDrive/final_project/cs5446_project/RHRL_PPO/reward_model
+    reward_checkpoint: /content/drive/MyDrive/rl/cs5446_project/RHRL_PPO/reward_model
     device_map: auto
     torch_dtype: float32
     load_in_8bit: false
