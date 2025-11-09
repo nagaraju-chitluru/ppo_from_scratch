@@ -8,7 +8,7 @@ import torch
 from omegaconf import OmegaConf
 from tqdm import tqdm
 
-from math import (
+from math_ppo import (
     MathDatasetConfig,
     MathPolicyConfig,
     MathRewardModelConfig,
