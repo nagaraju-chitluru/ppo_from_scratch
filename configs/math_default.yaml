@@ -1,0 +1,50 @@
+math:
+  dataset:
+    hf_dataset_id: nlile/hendrycks-MATH-benchmark
+    hf_split: test
+    subject: algebra
+    sample_limit: 128
+    test_fraction: 0.2
+    seed: 42
+
+  policy:
+    policy_checkpoint: /content/drive/MyDrive/final_project/cs5446_project/unsloth_sft_model
+    fallback_model_id: Qwen/Qwen2.5-Math-1.5B
+    device_map: auto
+    torch_dtype: float16
+    load_in_8bit: false
+    use_fast_tokenizer: false
+
+  reward_model:
+    reward_checkpoint: /content/drive/MyDrive/final_project/cs5446_project/RHRL_PPO/reward_model
+    device_map: auto
+    torch_dtype: float32
+    load_in_8bit: false
+    use_fast_tokenizer: false
+
+  reward_weights:
+    correct: 1.0
+    format: 0.1
+    brevity: 0.2
+    reward_model: 0.2
+
+training:
+  total_steps: 100
+  batch_size: 2
+  mini_batch_size: 1
+  learning_rate: 1.0e-5
+  target_kl: 4.0
+  max_new_tokens: 192
+  max_tokens_hint: 220
+  log_with: tensorboard
+  project_dir: ./logs/math
+  seed: 42
+  save_dir: ./artifacts/math_ppo
+
+generation:
+  temperature: 0.7
+  top_p: 0.9
+  do_sample: true
+  eos_token_id: null
+  pad_token_id: null
+

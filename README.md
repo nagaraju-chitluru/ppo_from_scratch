@@ -59,3 +59,21 @@ print(f"Mean episode return: {mean_r:.2f}")
 # 4) Record a GIF
 trainer.render_policy_eval_gif()
 ```
+
+---
+
+## Math RLHF Pipeline
+
+The repository now includes a math-specific PPO flow that reuses the math SFT checkpoint and reward model from the `RHRL_PPO` notebook.
+
+1. Install the optional dependencies:
+   ```bash
+   pip install -e .[math]
+   ```
+2. Update [`configs/math_default.yaml`](configs/math_default.yaml) with paths to your SFT policy (`math.policy.policy_checkpoint`) and reward model (`math.reward_model.reward_checkpoint`).
+3. Launch training:
+   ```bash
+   python trainer/math_train.py --config configs/math_default.yaml
+   ```
+
+During training the script logs PPO losses and reward components (reward-model score, format, correctness, brevity) so you can monitor alignment. Checkpoints and JSON summaries are written to the directory specified by `training.save_dir`. Use the optional evaluation section to score the fine-tuned policy on a held-out set of math prompts.
