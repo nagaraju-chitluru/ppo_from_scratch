@@ -21,6 +21,11 @@ from transformers import (
 )
 from trl import AutoModelForCausalLMWithValueHead
 
+try:
+    from peft import PeftModel
+except ImportError:  # pragma: no cover - optional dependency
+    PeftModel = None
+
 logger = logging.getLogger(__name__)
 
 
@@ -95,6 +100,8 @@ def load_math_policy(
 @dataclass
 class MathRewardModelConfig:
     reward_checkpoint: str
+    backbone_checkpoint: Optional[str] = None
+    fallback_backbone_id: str = "Qwen/Qwen2.5-Math-1.5B"
     device_map: Optional[str | dict] = "auto"
     torch_dtype: Optional[str] = "float32"
     load_in_8bit: bool = False
@@ -112,18 +119,53 @@ def load_math_reward_model(
 
     dtype = _resolve_dtype(config.torch_dtype)
 
-    reward_model = AutoModelForSequenceClassification.from_pretrained(
-        ckpt_path,
-        device_map=config.device_map,
-        torch_dtype=dtype,
-        load_in_8bit=config.load_in_8bit,
-        num_labels=1,
-    )
+    adapter_file = ckpt_path / "adapter_model.safetensors"
 
-    reward_tokenizer = AutoTokenizer.from_pretrained(
-        ckpt_path,
-        use_fast=config.use_fast_tokenizer,
-    )
+    if adapter_file.exists():
+        if PeftModel is None:
+            raise ImportError(
+                "peft is required to load LoRA adapters. Install with `pip install peft`."
+            )
+
+        backbone_path = None
+        if config.backbone_checkpoint:
+            potential = Path(config.backbone_checkpoint).expanduser().resolve()
+            if potential.exists():
+                backbone_path = str(potential)
+        if backbone_path is None:
+            backbone_path = config.fallback_backbone_id
+
+        base_model = AutoModelForSequenceClassification.from_pretrained(
+            backbone_path,
+            device_map=config.device_map,
+            torch_dtype=dtype,
+            load_in_8bit=config.load_in_8bit,
+        )
+
+        reward_model = PeftModel.from_pretrained(
+            base_model,
+            str(ckpt_path),
+            is_trainable=False,
+        )
+
+        reward_tokenizer = AutoTokenizer.from_pretrained(
+            backbone_path,
+            use_fast=config.use_fast_tokenizer,
+        )
+
+    else:
+        reward_model = AutoModelForSequenceClassification.from_pretrained(
+            ckpt_path,
+            device_map=config.device_map,
+            torch_dtype=dtype,
+            load_in_8bit=config.load_in_8bit,
+            num_labels=1,
+        )
+
+        reward_tokenizer = AutoTokenizer.from_pretrained(
+            ckpt_path,
+            use_fast=config.use_fast_tokenizer,
+        )
 
     return reward_model, reward_tokenizer
 
