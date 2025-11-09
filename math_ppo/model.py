@@ -8,6 +8,7 @@ These functions wrap Hugging Face transformers utilities for:
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Tuple
@@ -19,6 +20,8 @@ from transformers import (
     AutoTokenizer,
 )
 from trl import AutoModelForCausalLMWithValueHead
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -46,8 +49,20 @@ def load_math_policy(
     Load the math SFT checkpoint with a value head, plus the reference model.
     Falls back to the public model if the provided checkpoint is missing.
     """
-    ckpt_path = Path(config.policy_checkpoint).expanduser().resolve()
-    model_id = str(ckpt_path) if ckpt_path.exists() else config.fallback_model_id
+    ckpt_path = None
+    model_id = config.fallback_model_id
+
+    if config.policy_checkpoint:
+        potential = Path(config.policy_checkpoint).expanduser().resolve()
+        if potential.exists():
+            ckpt_path = potential
+            model_id = str(potential)
+        else:
+            logger.warning(
+                "Policy checkpoint %s not found. Falling back to %s.",
+                potential,
+                config.fallback_model_id,
+            )
 
     tokenizer = AutoTokenizer.from_pretrained(
         model_id,
