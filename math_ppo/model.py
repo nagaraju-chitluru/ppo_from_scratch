@@ -86,13 +86,14 @@ def load_math_policy(
     )
     policy_model.config.pad_token_id = tokenizer.pad_token_id
 
-    ref_model = AutoModelForCausalLM.from_pretrained(
+    ref_model = AutoModelForCausalLMWithValueHead.from_pretrained(
         model_id,
         device_map=config.device_map,
         torch_dtype=dtype,
         load_in_8bit=False,
     )
     ref_model.config.pad_token_id = tokenizer.pad_token_id
+    ref_model.eval()
 
     return policy_model, ref_model, tokenizer
 
