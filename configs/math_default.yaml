@@ -16,7 +16,7 @@ math:
     use_fast_tokenizer: false
 
   reward_model:
-    reward_checkpoint: /content/drive/MyDrive/rl/cs5446_project/RHRL_PPO/reward_model
+    reward_checkpoint: /content/drive/MyDrive/rl/reward_model
     backbone_checkpoint: /content/models/unsloth_sft_model
     fallback_backbone_id: Qwen/Qwen2.5-Math-1.5B
     device_map: auto
