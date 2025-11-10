@@ -98,6 +98,8 @@ def run_training(config_path: Path) -> None:
     )
 
     generation_kwargs = _prepare_generation_kwargs(generation_cfg, tokenizer)
+    generation_kwargs.setdefault("temperature", 0.7)
+
     device = trainer.model.pretrained_model.device
     total_steps = int(training_cfg["total_steps"])
 
@@ -116,11 +118,33 @@ def run_training(config_path: Path) -> None:
             device,
         )
 
-        response_tensors_full = trainer.generate(
-            query_tensors,
-            max_new_tokens=training_cfg["max_new_tokens"],
-            **generation_kwargs,
-        )
+        try:
+            response_tensors_full = trainer.generate(
+                query_tensors,
+                max_new_tokens=training_cfg["max_new_tokens"],
+                **generation_kwargs,
+            )
+        except RuntimeError as exc:
+            if "probability tensor" not in str(exc):
+                raise
+            fallback_kwargs = generation_kwargs.copy()
+            fallback_kwargs["do_sample"] = False
+            fallback_kwargs.pop("temperature", None)
+            fallback_kwargs.pop("top_p", None)
+            input_ids_padded = torch.nn.utils.rnn.pad_sequence(
+                query_tensors, batch_first=True, padding_value=tokenizer.pad_token_id
+            ).to(device)
+            attention_mask_padded = torch.nn.utils.rnn.pad_sequence(
+                [torch.ones_like(t) for t in query_tensors],
+                batch_first=True,
+                padding_value=0,
+            ).to(device)
+            response_tensors_full = trainer.model.generate(
+                input_ids=input_ids_padded,
+                attention_mask=attention_mask_padded,
+                max_new_tokens=training_cfg["max_new_tokens"],
+                **fallback_kwargs,
+            )
 
         response_tensors = []
         reward_tensors = []
