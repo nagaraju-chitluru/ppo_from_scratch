@@ -38,7 +38,7 @@ training:
   target_kl: 4.0
   max_new_tokens: 192
   max_tokens_hint: 220
-  log_with: tensorboard
+  log_with: null
   project_dir: ./logs/math
   seed: 42
   save_dir: ./artifacts/math_ppo
