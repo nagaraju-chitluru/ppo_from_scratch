@@ -137,10 +137,19 @@ def load_math_reward_model(
 
         base_model = AutoModelForSequenceClassification.from_pretrained(
             backbone_path,
+            num_labels=1,
             device_map=config.device_map,
             torch_dtype=dtype,
             load_in_8bit=config.load_in_8bit,
         )
+
+        if getattr(base_model, "score", None) is not None:
+            hidden_size = base_model.config.hidden_size
+            device = base_model.score.weight.device
+            dtype_weight = base_model.score.weight.dtype
+            score_layer = torch.nn.Linear(hidden_size, 1, bias=False)
+            base_model.score = score_layer.to(device=device, dtype=dtype_weight)
+        base_model.config.num_labels = 1
 
         reward_model = PeftModel.from_pretrained(
             base_model,
