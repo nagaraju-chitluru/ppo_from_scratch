@@ -96,6 +96,7 @@ def load_policy(cfg: RewardPolicyConfig):
     tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=cfg.use_fast_tokenizer)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "right"
 
     dtype = _resolve_dtype(cfg.torch_dtype)
 
@@ -110,6 +111,7 @@ def load_policy(cfg: RewardPolicyConfig):
         torch_dtype=dtype,
         quantization_config=quant_config,
     )
+    model.config.pad_token_id = tokenizer.pad_token_id
 
     if quant_config is not None:
         model = prepare_model_for_kbit_training(model)
