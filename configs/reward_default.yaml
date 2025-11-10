@@ -1,0 +1,40 @@
+reward:
+  dataset:
+    hf_dataset_id: kira/math-dpo
+    hf_split: train
+    sample_limit: 100
+    seed: 42
+
+  policy:
+    policy_checkpoint: /content/models/unsloth_sft_model
+    fallback_model_id: Qwen/Qwen2.5-Math-1.5B
+    device_map: auto
+    torch_dtype: float16
+    load_in_8bit: true
+    use_fast_tokenizer: false
+
+  training:
+    output_dir: /content/drive/MyDrive/rl/reward_model
+    per_device_train_batch_size: 2
+    gradient_accumulation_steps: 2
+    learning_rate: 1.0e-5
+    num_train_epochs: 3
+    logging_steps: 10
+    save_steps: 200
+    save_total_limit: 1
+    report_to: none
+    fp16: false
+    seed: 42
+
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.1
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - up_proj
+    - down_proj
+    - gate_proj

@@ -77,3 +77,14 @@ The repository now includes a math-specific PPO flow that reuses the math SFT ch
    ```
 
 During training the script logs PPO losses and reward components (reward-model score, format, correctness, brevity) so you can monitor alignment. Checkpoints and JSON summaries are written to the directory specified by `training.save_dir`. Use the optional evaluation section to score the fine-tuned policy on a held-out set of math prompts.
+
+### Reward Model Refresh
+
+To regenerate the reward model (stored in Drive), run the dedicated trainer:
+
+```bash
+pip install -e .[math]
+python trainer/reward_train.py --config configs/reward_default.yaml
+```
+
+Adjust the config with your Drive output directory and dataset limits. The script downloads the SFT backbone, applies LoRA, and saves the trained adapter/tokenizer to the specified location. Once finished, update `math_default.yaml` so PPO consumes the new reward checkpoint.

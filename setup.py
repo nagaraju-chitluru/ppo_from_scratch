@@ -14,6 +14,7 @@ math_extras = [
     "sentencepiece>=0.1.99,<0.2.0",
     "sympy>=1.12,<1.13",
     "peft>=0.14.0,<0.15.0",
+    "bitsandbytes>=0.42.0,<0.43.0",
 ]
 
 setup(
