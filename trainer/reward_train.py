@@ -5,7 +5,7 @@ from typing import Optional
 
 import numpy as np
 import torch
-from datasets import load_dataset
+from datasets import Dataset, load_dataset
 from omegaconf import OmegaConf
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from transformers import (
@@ -48,6 +48,7 @@ class RewardTrainingConfig:
     report_to: str = "none"
     fp16: bool = False
     seed: int = 42
+    max_length: int = 512
 
 
 @dataclass
@@ -74,7 +75,7 @@ def _resolve_dtype(name: Optional[str]) -> Optional[torch.dtype]:
     return getattr(torch, name)
 
 
-def prepare_dataset(cfg: RewardDatasetConfig):
+def prepare_dataset(cfg: RewardDatasetConfig) -> Dataset:
     ds = load_dataset(cfg.hf_dataset_id, split=cfg.hf_split)
     if cfg.sample_limit:
         limit = min(len(ds), cfg.sample_limit)
@@ -127,6 +128,40 @@ def apply_lora(model, lora_cfg: RewardLoraConfig):
     return get_peft_model(model, config)
 
 
+def tokenize_preferences(dataset: Dataset, tokenizer, max_length: int) -> Dataset:
+    def preprocess(batch):
+        prompts = batch["prompt"]
+        chosen = batch["chosen"]
+        rejected = batch["rejected"]
+
+        chosen_enc = tokenizer(
+            [p + "\n" + c for p, c in zip(prompts, chosen)],
+            truncation=True,
+            padding="max_length",
+            max_length=max_length,
+        )
+        rejected_enc = tokenizer(
+            [p + "\n" + r for p, r in zip(prompts, rejected)],
+            truncation=True,
+            padding="max_length",
+            max_length=max_length,
+        )
+
+        return {
+            "input_ids_chosen": chosen_enc["input_ids"],
+            "attention_mask_chosen": chosen_enc["attention_mask"],
+            "input_ids_rejected": rejected_enc["input_ids"],
+            "attention_mask_rejected": rejected_enc["attention_mask"],
+        }
+
+    processed = dataset.map(
+        preprocess,
+        batched=True,
+        remove_columns=dataset.column_names,
+    )
+    return processed
+
+
 def run_training(config_path: Path) -> None:
     cfg = OmegaConf.load(config_path)
 
@@ -135,10 +170,12 @@ def run_training(config_path: Path) -> None:
     training_cfg = RewardTrainingConfig(**cfg.reward.training)
     lora_cfg = RewardLoraConfig(**cfg.lora)
 
-    dataset = prepare_dataset(dataset_cfg)
     model, tokenizer = load_policy(policy_cfg)
     model = apply_lora(model, lora_cfg)
     model.train()
+
+    raw_dataset = prepare_dataset(dataset_cfg)
+    dataset = tokenize_preferences(raw_dataset, tokenizer, training_cfg.max_length)
 
     training_args = TrainingArguments(
         output_dir=training_cfg.output_dir,
