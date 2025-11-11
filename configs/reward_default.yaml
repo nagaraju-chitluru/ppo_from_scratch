@@ -6,7 +6,7 @@ reward:
     seed: 42
 
   policy:
-    policy_checkpoint: /content/models/unsloth_sft_model
+    policy_checkpoint: /content/drive/MyDrive/rl/unsloth_sft_model
     fallback_model_id: Qwen/Qwen2.5-Math-1.5B
     device_map: auto
     torch_dtype: float16
