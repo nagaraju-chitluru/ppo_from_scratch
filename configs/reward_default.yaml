@@ -2,7 +2,7 @@ reward:
   dataset:
     hf_dataset_id: kira/math-dpo
     hf_split: train
-    sample_limit: 100
+    sample_limit: null
     seed: 42
 
   policy:
